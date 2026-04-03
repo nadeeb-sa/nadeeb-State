@@ -108,7 +108,17 @@ export default function RecordDetailPage() {
   // Build detail fields based on type
   const details: { label: string; value: string }[] = [];
   if (type === "delegate") {
-    const NAT: Record<string,string> = { SA:"سعودي", EG:"مصري", PK:"باكستاني", IN:"هندي", BD:"بنغلاديشي", ID:"إندونيسي", MY:"ماليزي", YE:"يمني", SY:"سوري", OT:"أخرى" };
+    const NAT: Record<string,string> = {
+      SA:"سعودي", AE:"إماراتي", KW:"كويتي", QA:"قطري", BH:"بحريني", OM:"عُماني",
+      EG:"مصري", JO:"أردني", SY:"سوري", LB:"لبناني", IQ:"عراقي", PS:"فلسطيني",
+      YE:"يمني", SD:"سوداني", LY:"ليبي", TN:"تونسي", DZ:"جزائري", MA:"مغربي",
+      MR:"موريتاني", SO:"صومالي",
+      PK:"باكستاني", IN:"هندي", BD:"بنغلاديشي", NP:"نيبالي", LK:"سريلانكي",
+      ID:"إندونيسي", MY:"ماليزي", PH:"فلبيني",
+      NG:"نيجيري", ET:"إثيوبي", KE:"كيني", TZ:"تنزاني", SN:"سنغالي", ML:"مالي",
+      GB:"بريطاني", US:"أمريكي", FR:"فرنسي", TR:"تركي", IR:"إيراني", AF:"أفغاني",
+      OT:"أخرى",
+    };
     const EXP: Record<string,string> = { "0-1":"أقل من سنة", "1-3":"١ - ٣ سنوات", "3-5":"٣ - ٥ سنوات", "5+":"أكثر من ٥ سنوات" };
     const LANG: Record<string,string> = { arabic:"العربية", english:"الإنجليزية", urdu:"الأردية", malay:"الملايو" };
     if (record.nationality) details.push({ label: "الجنسية", value: NAT[String(record.nationality)] || String(record.nationality) });
