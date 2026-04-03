@@ -41,13 +41,13 @@ export async function GET() {
     ]);
 
     const recent = await client.query(`
-      SELECT 'delegate' AS type, "FullName" AS name, "City" AS city, "CreatedAt" AS created_at
+      SELECT 'delegate' AS type, "Id" AS id, "FullName" AS name, "City" AS city, "CreatedAt" AS created_at
       FROM "DelegateLeads"
       UNION ALL
-      SELECT 'company' AS type, "CompanyName" AS name, "City" AS city, "CreatedAt" AS created_at
+      SELECT 'company' AS type, "Id" AS id, "CompanyName" AS name, "City" AS city, "CreatedAt" AS created_at
       FROM "CompanyLeads"
       UNION ALL
-      SELECT 'investor' AS type, "FullName" AS name, "Country" AS city, "CreatedAt" AS created_at
+      SELECT 'investor' AS type, "Id" AS id, "FullName" AS name, "Country" AS city, "CreatedAt" AS created_at
       FROM "InvestorLeads"
       ORDER BY created_at DESC
       LIMIT 10

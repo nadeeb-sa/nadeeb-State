@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface Stats {
   updatedAt: string;
@@ -7,25 +8,10 @@ interface Stats {
   today: { delegates: number; companies: number; investors: number };
   week: { delegates: number; companies: number; investors: number };
   latest: { delegates: string; companies: string; investors: string };
-  recent: Array<{ type: string; name: string; city: string; created_at: string }>;
+  recent: Array<{ type: string; name: string; city: string; created_at: string; id?: number }>;
 }
 
 type RecordType = "delegate" | "company" | "investor";
-
-interface DelegateRow {
-  id: number; name: string; phone: string; email: string; city: string;
-  experience: string; languages: string; notes: string; status: string; created_at: string;
-}
-interface CompanyRow {
-  id: number; name: string; contact: string; phone: string; email: string;
-  license: string; city: string; size: string; website: string; notes: string;
-  status: string; created_at: string;
-}
-interface InvestorRow {
-  id: number; name: string; phone: string; email: string; investor_type: string;
-  country: string; interest_level: string; notes: string; status: string; created_at: string;
-}
-type AnyRow = DelegateRow | CompanyRow | InvestorRow;
 
 function useCountUp(target: number, duration = 800) {
   const [value, setValue] = useState(0);
@@ -91,12 +77,6 @@ const TYPE_CONFIG: Record<RecordType, { label: string; color: string; badge: str
   investor: { label: "مستثمر", color: "#6366f1", badge: "bg-indigo-500/20 text-indigo-300" },
 };
 
-const TYPE_LABELS: Record<RecordType, string> = {
-  delegate: "المناديب",
-  company: "الشركات",
-  investor: "المستثمرين",
-};
-
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
   if (diff < 60) return "الآن";
@@ -105,218 +85,14 @@ function timeAgo(dateStr: string): string {
   return `منذ ${Math.floor(diff / 86400)} ي`;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString("ar-SA", {
-    year: "numeric", month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
-
-// ─── Records Modal ────────────────────────────────────────
-function RecordsModal({
-  type, onClose
-}: {
-  type: RecordType;
-  onClose: () => void;
-}) {
-  const [rows, setRows] = useState<AnyRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sort, setSort] = useState<"newest" | "oldest">("newest");
-  const [search, setSearch] = useState("");
-  const cfg = TYPE_CONFIG[type];
-
-  const fetchRecords = useCallback(async (s: "newest" | "oldest") => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/records?type=${type}&sort=${s}`, { cache: "no-store" });
-      const data = await res.json();
-      setRows(data.rows || []);
-    } finally {
-      setLoading(false);
-    }
-  }, [type]);
-
-  useEffect(() => { fetchRecords(sort); }, [fetchRecords, sort]);
-
-  // filter by search
-  const filtered = rows.filter((r) => {
-    const q = search.toLowerCase();
-    return Object.values(r).some((v) =>
-      typeof v === "string" && v.toLowerCase().includes(q)
-    );
-  });
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-[#131e2b] rounded-2xl border border-white/10 w-full max-w-5xl mt-8 mb-8 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-white text-lg">سجلات {TYPE_LABELS[type]}</span>
-            <span className="text-xs px-2.5 py-1 rounded-full font-medium"
-              style={{ backgroundColor: `${cfg.color}20`, color: cfg.color }}>
-              {filtered.length} سجل
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Sort */}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as "newest" | "oldest")}
-              className="bg-white/10 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 outline-none cursor-pointer"
-            >
-              <option value="newest">الأحدث أولاً</option>
-              <option value="oldest">الأقدم أولاً</option>
-            </select>
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="بحث..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-white/10 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 outline-none placeholder:text-gray-500 w-36"
-            />
-            <button onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-all text-lg">
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="w-8 h-8 border-2 rounded-full animate-spin"
-                style={{ borderColor: `${cfg.color}40`, borderTopColor: cfg.color }} />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">لا توجد سجلات</div>
-          ) : type === "delegate" ? (
-            <DelegateTable rows={filtered as DelegateRow[]} color={cfg.color} />
-          ) : type === "company" ? (
-            <CompanyTable rows={filtered as CompanyRow[]} color={cfg.color} />
-          ) : (
-            <InvestorTable rows={filtered as InvestorRow[]} color={cfg.color} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TableHeader({ cols }: { cols: string[] }) {
-  return (
-    <thead>
-      <tr className="border-b border-white/10">
-        {cols.map((c) => (
-          <th key={c} className="px-4 py-3 text-right text-xs font-semibold text-gray-400 whitespace-nowrap">
-            {c}
-          </th>
-        ))}
-      </tr>
-    </thead>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    new: "bg-blue-500/20 text-blue-300",
-    contacted: "bg-yellow-500/20 text-yellow-300",
-    converted: "bg-green-500/20 text-green-300",
-    rejected: "bg-red-500/20 text-red-300",
-  };
-  const labels: Record<string, string> = {
-    new: "جديد", contacted: "تم التواصل", converted: "تحوّل", rejected: "مرفوض",
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${map[status] || "bg-white/10 text-gray-400"}`}>
-      {labels[status] || status}
-    </span>
-  );
-}
-
-function DelegateTable({ rows, color }: { rows: DelegateRow[]; color: string }) {
-  return (
-    <table className="w-full text-sm">
-      <TableHeader cols={["#", "الاسم", "الهاتف", "البريد", "المدينة", "الخبرة", "اللغات", "الحالة", "تاريخ التسجيل"]} />
-      <tbody className="divide-y divide-white/5">
-        {rows.map((r, i) => (
-          <tr key={r.id} className="hover:bg-white/3 transition-colors">
-            <td className="px-4 py-3 text-gray-500 text-xs">{i + 1}</td>
-            <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{r.name}</td>
-            <td className="px-4 py-3 text-gray-300 whitespace-nowrap" dir="ltr">{r.phone}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs" dir="ltr">{r.email}</td>
-            <td className="px-4 py-3 text-gray-300">{r.city}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs max-w-[140px] truncate">{r.experience}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs">{r.languages}</td>
-            <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{formatDate(r.created_at)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-function CompanyTable({ rows, color }: { rows: CompanyRow[]; color: string }) {
-  return (
-    <table className="w-full text-sm">
-      <TableHeader cols={["#", "الشركة", "المسؤول", "الهاتف", "البريد", "المدينة", "الحجم", "الموقع", "الحالة", "تاريخ التسجيل"]} />
-      <tbody className="divide-y divide-white/5">
-        {rows.map((r, i) => (
-          <tr key={r.id} className="hover:bg-white/3 transition-colors">
-            <td className="px-4 py-3 text-gray-500 text-xs">{i + 1}</td>
-            <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{r.name}</td>
-            <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{r.contact}</td>
-            <td className="px-4 py-3 text-gray-300 whitespace-nowrap" dir="ltr">{r.phone}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs" dir="ltr">{r.email}</td>
-            <td className="px-4 py-3 text-gray-300">{r.city}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs">{r.size}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs" dir="ltr">
-              {r.website ? <a href={r.website} target="_blank" className="underline hover:text-white">{r.website}</a> : "—"}
-            </td>
-            <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{formatDate(r.created_at)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-function InvestorTable({ rows, color }: { rows: InvestorRow[]; color: string }) {
-  return (
-    <table className="w-full text-sm">
-      <TableHeader cols={["#", "الاسم", "الهاتف", "البريد", "نوع المستثمر", "الدولة", "مستوى الاهتمام", "الحالة", "تاريخ التسجيل"]} />
-      <tbody className="divide-y divide-white/5">
-        {rows.map((r, i) => (
-          <tr key={r.id} className="hover:bg-white/3 transition-colors">
-            <td className="px-4 py-3 text-gray-500 text-xs">{i + 1}</td>
-            <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{r.name}</td>
-            <td className="px-4 py-3 text-gray-300 whitespace-nowrap" dir="ltr">{r.phone}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs" dir="ltr">{r.email}</td>
-            <td className="px-4 py-3 text-gray-300 text-xs">{r.investor_type}</td>
-            <td className="px-4 py-3 text-gray-300">{r.country}</td>
-            <td className="px-4 py-3 text-gray-400 text-xs">{r.interest_level}</td>
-            <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{formatDate(r.created_at)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────
 export default function StatsPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState(30);
-  const [modal, setModal] = useState<RecordType | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -348,9 +124,6 @@ export default function StatsPage() {
 
   return (
     <div className="min-h-screen bg-[#0f1923] text-white" dir="rtl">
-      {/* Modal */}
-      {modal && <RecordsModal type={modal} onClose={() => setModal(null)} />}
-
       {/* Header */}
       <header className="border-b border-white/10 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -424,7 +197,7 @@ export default function StatsPage() {
                 sub1Label="اليوم" sub1={stats.today.delegates}
                 sub2Label="هذا الأسبوع" sub2={stats.week.delegates}
                 color="#156661"
-                onView={() => setModal("delegate")}
+                onView={() => router.push("/records/delegate")}
               />
               <StatCard
                 label="الشركات"
@@ -432,7 +205,7 @@ export default function StatsPage() {
                 sub1Label="اليوم" sub1={stats.today.companies}
                 sub2Label="هذا الأسبوع" sub2={stats.week.companies}
                 color="#c0973b"
-                onView={() => setModal("company")}
+                onView={() => router.push("/records/company")}
               />
               <StatCard
                 label="المستثمرين"
@@ -440,7 +213,7 @@ export default function StatsPage() {
                 sub1Label="اليوم" sub1={stats.today.investors}
                 sub2Label="هذا الأسبوع" sub2={stats.week.investors}
                 color="#6366f1"
-                onView={() => setModal("investor")}
+                onView={() => router.push("/records/investor")}
               />
             </div>
 
@@ -454,14 +227,24 @@ export default function StatsPage() {
                 {stats.recent.map((row, i) => {
                   const cfg = TYPE_CONFIG[row.type as RecordType] || TYPE_CONFIG.delegate;
                   return (
-                    <div key={i} className="px-6 py-3.5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                    <button
+                      key={i}
+                      onClick={() => {
+                        if (row.id) {
+                          router.push(`/records/${row.type}/${row.id}`);
+                        } else {
+                          router.push(`/records/${row.type}`);
+                        }
+                      }}
+                      className="w-full px-6 py-3.5 flex items-center gap-4 hover:bg-white/5 transition-colors text-right"
+                    >
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${cfg.badge} flex-shrink-0`}>
                         {cfg.label}
                       </span>
                       <span className="text-white font-medium flex-1 truncate">{row.name}</span>
                       <span className="text-gray-500 text-sm hidden sm:block">{row.city}</span>
                       <span className="text-gray-500 text-xs flex-shrink-0">{timeAgo(row.created_at)}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
