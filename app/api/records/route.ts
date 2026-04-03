@@ -14,7 +14,7 @@ const TABLE_MAP: Record<string, { table: string; nameCol: string; searchCols: st
   delegate: {
     table: "DelegateLeads",
     nameCol: "FullName",
-    searchCols: ["FullName", "Phone", "Email", "City"],
+    searchCols: ["FullName", "Phone", "Email", "City", "Nationality"],
   },
   company: {
     table: "CompanyLeads",
@@ -31,7 +31,7 @@ const TABLE_MAP: Record<string, { table: string; nameCol: string; searchCols: st
 const SELECT_MAP: Record<string, string> = {
   delegate: `"Id" as id, "FullName" as name, "Phone" as phone, "Email" as email,
     "City" as city, "Experience" as experience, "Languages" as languages,
-    "Notes" as notes, "Status" as status, "CreatedAt" as created_at`,
+    "Nationality" as nationality, "Notes" as notes, "Status" as status, "CreatedAt" as created_at`,
   company: `"Id" as id, "CompanyName" as name, "ContactName" as contact,
     "Phone" as phone, "Email" as email, "LicenseNo" as license,
     "City" as city, "CompanySize" as size, "Website" as website,
@@ -76,9 +76,14 @@ export async function GET(req: Request) {
            WHERE "Languages" IS NOT NULL AND "Languages" != '' AND "Languages" != '[]'
            ORDER BY lang`
         );
+        const natRes = await client.query(
+          `SELECT DISTINCT "Nationality" as val FROM "DelegateLeads"
+           WHERE "Nationality" IS NOT NULL AND "Nationality" != '' ORDER BY "Nationality"`
+        );
         extra = {
           experiences: expRes.rows.map((r) => r.val),
           languages: langRes.rows.map((r) => r.lang),
+          nationalities: natRes.rows.map((r) => r.val),
         };
       } else if (type === "company") {
         const sizeRes = await client.query(
@@ -140,6 +145,8 @@ export async function GET(req: Request) {
       values.push(`%${search}%`);
     }
 
+    const nationality = searchParams.get("nationality"); // delegate only
+
     // Delegate-specific filters
     if (type === "delegate") {
       if (experience) {
@@ -147,9 +154,12 @@ export async function GET(req: Request) {
         values.push(experience);
       }
       if (language) {
-        // JSON array contains value
         conditions.push(`"Languages"::jsonb @> $${values.length + 1}::jsonb`);
         values.push(JSON.stringify([language]));
+      }
+      if (nationality) {
+        conditions.push(`"Nationality" = $${values.length + 1}`);
+        values.push(nationality);
       }
     }
 

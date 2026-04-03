@@ -22,7 +22,7 @@ export async function GET(
       const res = await client.query(
         `SELECT "Id" as id, "FullName" as name, "Phone" as phone, "Email" as email,
          "City" as city, "Experience" as experience, "Languages" as languages,
-         "Notes" as notes, "Status" as status, "CreatedAt" as created_at
+         "Nationality" as nationality, "Notes" as notes, "Status" as status, "CreatedAt" as created_at
          FROM "DelegateLeads" WHERE "Id" = $1`,
         [id]
       );

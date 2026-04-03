@@ -24,6 +24,7 @@ interface FilterOptions {
   // delegate
   experiences?: string[];
   languages?: string[];
+  nationalities?: string[];
   // company
   sizes?: string[];
   // investor
@@ -54,6 +55,11 @@ const EXP_LABELS: Record<string, string> = {
 
 const LANG_LABELS: Record<string, string> = {
   arabic: "العربية", english: "الإنجليزية", urdu: "الأردية", malay: "الملايو",
+};
+
+const NAT_LABELS: Record<string, string> = {
+  SA: "سعودي", EG: "مصري", PK: "باكستاني", IN: "هندي",
+  BD: "بنغلاديشي", ID: "إندونيسي", MY: "ماليزي", YE: "يمني", SY: "سوري", OT: "أخرى",
 };
 
 const SIZE_LABELS: Record<string, string> = {
@@ -108,6 +114,7 @@ export default function RecordsListPage() {
   // delegate
   const [experience, setExperience] = useState("");
   const [language,   setLanguage]   = useState("");
+  const [nationality, setNationality] = useState("");
   // company
   const [size,       setSize]       = useState("");
   // investor
@@ -134,6 +141,7 @@ export default function RecordsListPage() {
       if (city)       p.set("city",       city);
       if (experience) p.set("experience", experience);
       if (language)   p.set("language",   language);
+      if (nationality) p.set("nationality", nationality);
       if (size)       p.set("size",       size);
       if (country)    p.set("country",    country);
       if (invType)    p.set("investorType", invType);
@@ -158,14 +166,14 @@ export default function RecordsListPage() {
 
   const clearFilters = () => {
     setSearch(""); setStatus(""); setCity(""); setSort("newest");
-    setExperience(""); setLanguage(""); setSize("");
+    setExperience(""); setLanguage(""); setNationality(""); setSize("");
     setCountry(""); setInvType(""); setInterest("");
   };
 
-  const hasFilters = search || status || city || experience || language || size || country || invType || interest;
+  const hasFilters = search || status || city || experience || language || nationality || size || country || invType || interest;
 
   // active filter count
-  const filterCount = [search,status,city,experience,language,size,country,invType,interest].filter(Boolean).length;
+  const filterCount = [search,status,city,experience,language,nationality,size,country,invType,interest].filter(Boolean).length;
 
   return (
     <div className="max-w-2xl mx-auto px-3 py-5">
@@ -229,19 +237,31 @@ export default function RecordsListPage() {
 
         {/* Type-specific filters */}
         {type === "delegate" && (
-          <div className="flex gap-2 flex-wrap">
-            <FilterSelect
-              value={experience} onChange={setExperience}
-              placeholder="كل الخبرات"
-              options={opts.experiences || ["0-1","1-3","3-5","5+"]}
-              labelFn={(v) => EXP_LABELS[v] || v}
-            />
-            <FilterSelect
-              value={language} onChange={setLanguage}
-              placeholder="كل اللغات"
-              options={opts.languages || []}
-              labelFn={(v) => LANG_LABELS[v] || v}
-            />
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <FilterSelect
+                value={experience} onChange={setExperience}
+                placeholder="كل الخبرات"
+                options={opts.experiences || ["0-1","1-3","3-5","5+"]}
+                labelFn={(v) => EXP_LABELS[v] || v}
+              />
+              <FilterSelect
+                value={language} onChange={setLanguage}
+                placeholder="كل اللغات"
+                options={opts.languages || []}
+                labelFn={(v) => LANG_LABELS[v] || v}
+              />
+            </div>
+            {(opts.nationalities || []).length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                <FilterSelect
+                  value={nationality} onChange={setNationality}
+                  placeholder="كل الجنسيات"
+                  options={opts.nationalities || []}
+                  labelFn={(v) => NAT_LABELS[v] || v}
+                />
+              </div>
+            )}
           </div>
         )}
 

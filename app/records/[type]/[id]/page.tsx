@@ -108,8 +108,19 @@ export default function RecordDetailPage() {
   // Build detail fields based on type
   const details: { label: string; value: string }[] = [];
   if (type === "delegate") {
-    if (record.experience) details.push({ label: "الخبرة", value: String(record.experience) });
-    if (record.languages) details.push({ label: "اللغات", value: String(record.languages) });
+    const NAT: Record<string,string> = { SA:"سعودي", EG:"مصري", PK:"باكستاني", IN:"هندي", BD:"بنغلاديشي", ID:"إندونيسي", MY:"ماليزي", YE:"يمني", SY:"سوري", OT:"أخرى" };
+    const EXP: Record<string,string> = { "0-1":"أقل من سنة", "1-3":"١ - ٣ سنوات", "3-5":"٣ - ٥ سنوات", "5+":"أكثر من ٥ سنوات" };
+    const LANG: Record<string,string> = { arabic:"العربية", english:"الإنجليزية", urdu:"الأردية", malay:"الملايو" };
+    if (record.nationality) details.push({ label: "الجنسية", value: NAT[String(record.nationality)] || String(record.nationality) });
+    if (record.experience) details.push({ label: "الخبرة", value: EXP[String(record.experience)] || String(record.experience) });
+    if (record.languages) {
+      try {
+        const langs = JSON.parse(String(record.languages)) as string[];
+        details.push({ label: "اللغات", value: langs.map((l) => LANG[l] || l).join(" · ") });
+      } catch {
+        details.push({ label: "اللغات", value: String(record.languages) });
+      }
+    }
   } else if (type === "company") {
     if (record.contact) details.push({ label: "المسؤول", value: String(record.contact) });
     if (record.license) details.push({ label: "رقم الرخصة", value: String(record.license) });
