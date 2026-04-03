@@ -69,6 +69,9 @@ const NAT_LABELS: Record<string, string> = {
   OT:"أخرى",
 };
 
+// كل الجنسيات الثابتة — لا تعتمد على DB
+const ALL_NATIONALITIES = Object.keys(NAT_LABELS);
+
 const SIZE_LABELS: Record<string, string> = {
   small: "صغيرة", medium: "متوسطة", large: "كبيرة",
 };
@@ -259,16 +262,14 @@ export default function RecordsListPage() {
                 labelFn={(v) => LANG_LABELS[v] || v}
               />
             </div>
-            {(opts.nationalities || []).length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                <FilterSelect
-                  value={nationality} onChange={setNationality}
-                  placeholder="كل الجنسيات"
-                  options={opts.nationalities || []}
-                  labelFn={(v) => NAT_LABELS[v] || v}
-                />
-              </div>
-            )}
+            <div className="flex gap-2 flex-wrap">
+              <FilterSelect
+                value={nationality} onChange={setNationality}
+                placeholder="كل الجنسيات"
+                options={ALL_NATIONALITIES}
+                labelFn={(v) => NAT_LABELS[v] || v}
+              />
+            </div>
           </div>
         )}
 
